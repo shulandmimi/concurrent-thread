@@ -1,0 +1,10 @@
+[package]
+name = "threads"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossbeam-deque = "0.8.5"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "default"] }
+rand = "0.8"
