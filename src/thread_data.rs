@@ -35,7 +35,7 @@ pub struct Root {
     pub state: RootState,
 }
 
-const CORE_NUMS: usize = 4;
+pub const CORE_NUMS: usize = 4;
 
 impl Root {
     fn new() -> Arc<Root> {
@@ -69,6 +69,7 @@ impl Root {
         loop {
             let mut pending_tasks = self.state.pending_tasks_job.lock().unwrap();
 
+            trace!("worker {} wait a job {}", ThreadWoker::current_index(), pending_tasks.len());
             if pending_tasks.is_empty() {
                 break;
             }
@@ -116,13 +117,7 @@ fn thread_loop(index: usize, root: Arc<Root>) {
     root.threads[index].crated.set();
 
     loop {
-        // println!("thread loop: {}", index);
-        // if let Some(mut job) = worker.pop() {
-        //     unsafe {
-        //         job.execute();
-        //     }
-        // }
-        // worker
+        trace!("worker {} loop", index);
         // root.threads
         if let Some(job) = root.wait_task() {
             unsafe { job.execute() };

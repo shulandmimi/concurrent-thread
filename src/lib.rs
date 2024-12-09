@@ -11,7 +11,9 @@ mod util;
 use job::{Job, JobRef};
 use latch::Latch;
 use thread_data::Root;
-use tracing::{instrument, trace};
+use tracing::{instrument, trace, Level};
+use tracing_subscriber::EnvFilter;
+pub mod iter;
 
 struct ThreadData {
     queue: Mutex<VecDeque<JobRef>>,
@@ -61,7 +63,7 @@ impl ThreadWoker {
             .queue
             .lock()
             .unwrap()
-            .push_back(job);
+            .push_front(job);
     }
 
     fn pop(&self) -> Option<JobRef> {
@@ -89,18 +91,13 @@ where
     unsafe {
         trace!("join on worker: {}", (*worker).index);
 
-        let latch = Arc::new(Latch::new());
-        let job = Job::new(a, latch.clone());
-        let job_ref = JobRef::new(&job);
-
         let latch_b = Arc::new(Latch::new());
         let job_b = Job::new(b, latch_b.clone());
         let job_b_ref = JobRef::new(&job_b);
 
         (*worker).push(job_b_ref);
 
-        // (&worker);
-        job_ref.execute();
+        a();
 
         if let Some(job) = (*worker).pop() {
             job.execute();
@@ -136,4 +133,13 @@ where
         latch.wait();
         latch_b.wait();
     };
+}
+
+pub fn log_init() {
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_env_filter(EnvFilter::from_default_env())
+        .with_max_level(Level::TRACE)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }

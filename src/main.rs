@@ -1,14 +1,5 @@
-use tracing::{info, Level};
-use tracing_subscriber::EnvFilter;
-
-fn log_init() {
-    let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_env_filter(EnvFilter::from_default_env())
-        .with_max_level(Level::TRACE)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-}
+use concurrent_threads::log_init;
+use tracing::info;
 
 fn main() {
     log_init();
@@ -17,9 +8,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::{thread::sleep, time::Duration};
+    use std::{collections::HashSet, fmt::Debug, thread::sleep, time::Duration};
 
-    use threads::join;
+    use concurrent_threads::join;
 
     #[test]
     fn nested_join() {
@@ -63,7 +54,7 @@ mod tests {
 
     #[test]
     fn sort() {
-        fn quick_sort<T: PartialOrd + Send + Sync>(v: &mut [T]) {
+        fn quick_sort<T: PartialOrd + Send + Sync + Debug>(v: &mut [T]) {
             if v.len() <= 1 {
                 return;
             }
@@ -93,10 +84,13 @@ mod tests {
             i
         }
 
-        let mut data: Vec<_> = (0..6).map(|_| rand::random::<u16>()).collect();
+        let mut data: Vec<_> = (0..10 * 1024)
+            .map(|_| rand::random::<u16>())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
 
         quick_sort(&mut data);
-
         let mut sorted_data = data.clone();
         sorted_data.sort();
 

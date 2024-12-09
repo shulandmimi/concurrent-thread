@@ -24,6 +24,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "concurrent-threads"
+version = "0.1.0"
+dependencies = [
+ "crossbeam-deque",
+ "rand",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -255,16 +265,6 @@ checksum = "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c"
 dependencies = [
  "cfg-if",
  "once_cell",
-]
-
-[[package]]
-name = "threads"
-version = "0.1.0"
-dependencies = [
- "crossbeam-deque",
- "rand",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

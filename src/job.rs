@@ -1,4 +1,10 @@
-use std::{cell::UnsafeCell, sync::Arc};
+use std::{
+    cell::UnsafeCell,
+    panic::{catch_unwind, AssertUnwindSafe},
+    sync::Arc,
+};
+
+use tracing::error;
 
 use crate::latch::Latch;
 
@@ -21,7 +27,12 @@ where
 
         let func = (*this.task.get()).take().unwrap();
 
-        func();
+        match catch_unwind(AssertUnwindSafe(func)) {
+            Ok(_) => {}
+            Err(err) => {
+                error!("panic in job: {:#?}", err);
+            }
+        };
 
         this.latch.set();
     }
