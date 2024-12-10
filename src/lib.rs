@@ -78,8 +78,8 @@ impl ThreadWoker {
 #[instrument(skip_all)]
 pub fn join<F1, F2>(a: F1, b: F2)
 where
-    F1: FnOnce() + Sync,
-    F2: FnOnce() + Sync,
+    F1: FnOnce() + Send,
+    F2: FnOnce() + Send,
 {
     let worker = ThreadWoker::current();
 
@@ -110,8 +110,8 @@ where
 #[instrument(skip_all)]
 fn inject_job<F1, F2>(a: F1, b: F2)
 where
-    F1: FnOnce() + Sync,
-    F2: FnOnce() + Sync,
+    F1: FnOnce() + Send,
+    F2: FnOnce() + Send,
 {
     unsafe {
         let root = Root::current();

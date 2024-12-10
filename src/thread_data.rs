@@ -35,7 +35,7 @@ pub struct Root {
     pub state: RootState,
 }
 
-pub const CORE_NUMS: usize = 4;
+pub const CORE_NUMS: usize = 8;
 
 impl Root {
     fn new() -> Arc<Root> {

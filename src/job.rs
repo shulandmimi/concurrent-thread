@@ -19,7 +19,7 @@ pub struct Job<F> {
 
 impl<F> Execute for Job<F>
 where
-    F: FnOnce() + Sync,
+    F: FnOnce() + Send,
 {
     unsafe fn execute(this: *const ()) {
         let this = this as *const Job<F>;

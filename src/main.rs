@@ -10,7 +10,10 @@ fn main() {
 mod tests {
     use std::{collections::HashSet, fmt::Debug, thread::sleep, time::Duration};
 
-    use concurrent_threads::join;
+    use concurrent_threads::{
+        iter::vec::{IntoParallelIterator, ParallelIterator},
+        join,
+    };
 
     #[test]
     fn nested_join() {
@@ -95,5 +98,17 @@ mod tests {
         sorted_data.sort();
 
         assert_eq!(data, sorted_data);
+    }
+
+    #[test]
+    fn for_each() {
+        let items: Vec<_> = (0..100)
+            .map(|_| rand::random::<u16>())
+            .enumerate()
+            .collect();
+
+        items.into_par_iter().for_each(|item| {
+            println!("{:?}", item);
+        });
     }
 }
