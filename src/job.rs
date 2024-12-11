@@ -4,45 +4,47 @@ use std::{
     sync::Arc,
 };
 
-use tracing::error;
-
 use crate::latch::Latch;
 
 trait Execute {
     unsafe fn execute(this: *const ());
 }
 
-pub struct Job<F> {
+pub struct Job<F, R> {
     latch: Arc<Latch>,
     task: UnsafeCell<Option<F>>,
+    result: *mut Option<R>,
 }
 
-impl<F> Execute for Job<F>
+impl<F, R> Execute for Job<F, R>
 where
-    F: FnOnce() + Send,
+    F: (FnOnce() -> R) + Send,
+    R: Send,
 {
     unsafe fn execute(this: *const ()) {
-        let this = this as *const Job<F>;
+        let this = this as *const Job<F, R>;
         let this = &*this;
 
         let func = (*this.task.get()).take().unwrap();
 
-        match catch_unwind(AssertUnwindSafe(func)) {
-            Ok(_) => {}
+        let r = match catch_unwind(AssertUnwindSafe(func)) {
+            Ok(r) => r,
             Err(err) => {
-                error!("panic in job: {:#?}", err);
+                panic!("panic in job: {:#?}", err)
             }
         };
 
+        *this.result = Some(r);
         this.latch.set();
     }
 }
 
-impl<F> Job<F> {
-    pub unsafe fn new(code: F, latch: Arc<Latch>) -> Job<F> {
+impl<F, R> Job<F, R> {
+    pub unsafe fn new(code: F, latch: Arc<Latch>, result: *mut Option<R>) -> Job<F, R> {
         Job {
             task: UnsafeCell::new(Some(code)),
             latch,
+            result,
         }
     }
 }

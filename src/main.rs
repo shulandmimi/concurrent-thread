@@ -8,12 +8,31 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, fmt::Debug, thread::sleep, time::Duration};
+    use std::{
+        collections::HashSet,
+        fmt::Debug,
+        thread::{self, sleep},
+        time::Duration,
+    };
 
     use concurrent_threads::{
         iter::vec::{IntoParallelIterator, ParallelIterator},
         join,
     };
+
+    #[test]
+    fn join_result() {
+        let (r1, r2) = join(
+            || 1,
+            || {
+                thread::sleep(Duration::from_secs(1));
+                2
+            },
+        );
+
+        assert_eq!(r1, 1);
+        assert_eq!(r2, 2);
+    }
 
     #[test]
     fn nested_join() {
@@ -64,14 +83,7 @@ mod tests {
 
             let mid = partition(v);
             let (lo, hi) = v.split_at_mut(mid);
-            join(
-                || {
-                    quick_sort(lo);
-                },
-                || {
-                    quick_sort(hi);
-                },
-            );
+            join(|| quick_sort(lo), || quick_sort(hi));
         }
 
         fn partition<T: PartialOrd + Send + Sync>(v: &mut [T]) -> usize {

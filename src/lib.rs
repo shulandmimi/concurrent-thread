@@ -76,10 +76,12 @@ impl ThreadWoker {
 }
 
 #[instrument(skip_all)]
-pub fn join<F1, F2>(a: F1, b: F2)
+pub fn join<F1, F2, R1, R2>(a: F1, b: F2) -> (R1, R2)
 where
-    F1: FnOnce() + Send,
-    F2: FnOnce() + Send,
+    F1: FnOnce() -> R1 + Send,
+    F2: FnOnce() -> R2 + Send,
+    R1: Send,
+    R2: Send,
 {
     let worker = ThreadWoker::current();
 
@@ -92,36 +94,43 @@ where
         trace!("join on worker: {}", (*worker).index);
 
         let latch_b = Arc::new(Latch::new());
-        let job_b = Job::new(b, latch_b.clone());
+        let mut result_b: Option<R2> = None;
+        let job_b = Job::new(b, latch_b.clone(), &mut result_b);
         let job_b_ref = JobRef::new(&job_b);
 
         (*worker).push(job_b_ref);
 
-        a();
+        let r1 = a();
 
         if let Some(job) = (*worker).pop() {
             job.execute();
         }
 
         latch_b.wait();
+
+        (r1, result_b.unwrap())
     }
 }
 
 #[instrument(skip_all)]
-fn inject_job<F1, F2>(a: F1, b: F2)
+fn inject_job<F1, F2, R1, R2>(a: F1, b: F2) -> (R1, R2)
 where
-    F1: FnOnce() + Send,
-    F2: FnOnce() + Send,
+    F1: FnOnce() -> R1 + Send,
+    F2: FnOnce() -> R2 + Send,
+    R1: Send,
+    R2: Send,
 {
     unsafe {
         let root = Root::current();
 
         let latch = Arc::new(Latch::new());
-        let job = Job::new(a, latch.clone());
+        let mut result_a: Option<R1> = None;
+        let job = Job::new(a, latch.clone(), &mut result_a);
         let job_a_ref = JobRef::new(&job);
 
+        let mut result_b: Option<R2> = None;
         let latch_b = Arc::new(Latch::new());
-        let job_b = Job::new(b, latch_b.clone());
+        let job_b = Job::new(b, latch_b.clone(), &mut result_b);
         let job_b_ref = JobRef::new(&job_b);
 
         root.state
@@ -132,7 +141,9 @@ where
 
         latch.wait();
         latch_b.wait();
-    };
+
+        (result_a.unwrap(), result_b.unwrap())
+    }
 }
 
 pub fn log_init() {
