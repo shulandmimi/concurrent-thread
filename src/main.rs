@@ -123,4 +123,15 @@ mod tests {
             println!("{:?}", item);
         });
     }
+
+    #[test]
+    fn map() {
+        let v = vec![1, 2, 3]
+            .into_par_iter()
+            .map(|i| i * 2)
+            .map(|i| i * 2)
+            .collect::<Vec<_>>();
+
+        assert!(v == vec![4, 8, 12]);
+    }
 }
